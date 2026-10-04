@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+  .font-cinzel-decorative {
+    font-family: 'Cinzel Decorative', cursive;
+  }
+  .font-garamond {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .font-uncial {
+    font-family: 'Uncial Antiqua', cursive;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 15, 0.7);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 140, 75, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.7);
+}
+
+/* Card Holographic Foil Effect */
+.foil-sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 215, 0, 0.15) 45%,
+    rgba(0, 255, 255, 0.15) 50%,
+    rgba(255, 0, 128, 0.15) 55%,
+    rgba(255, 255, 255, 0.03) 75%,
+    transparent 100%
+  );
+  background-size: 250% 250%;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+  animation: shimmer 6s ease infinite;
+}
+
+.foil-gold {
+  background: linear-gradient(
+    135deg,
+    rgba(218, 165, 32, 0.15) 0%,
+    rgba(255, 223, 0, 0.3) 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(218, 165, 32, 0.3) 70%,
+    rgba(184, 134, 11, 0.2) 100%
+  );
+  background-size: 200% 200%;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.foil-cosmic {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(138, 43, 226, 0.25),
+    rgba(0, 191, 255, 0.2) 40%,
+    rgba(255, 20, 147, 0.15) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.03); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Ornate card border bevel styling */
+.ornate-border-gold {
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  box-shadow: inset 0 0 12px rgba(212, 175, 55, 0.15), 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+.ornate-border-crimson {
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.2), 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+.ornate-border-emerald {
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.2), 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+.ornate-border-arcane {
+  border: 1px solid rgba(147, 51, 234, 0.6);
+  box-shadow: inset 0 0 12px rgba(147, 51, 234, 0.2), 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+.ornate-border-azure {
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.2), 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+/* Micro-Animations for Codex Icons and HUD elements */
+@keyframes iconFlicker {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.6)); }
+  50% { transform: scale(1.18) rotate(-3deg); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.9)); }
+}
+
+@keyframes iconZapJitter {
+  0%, 100% { transform: scale(1) translate(0, 0); filter: drop-shadow(0 0 4px rgba(234, 179, 8, 0.6)); }
+  25% { transform: scale(1.15) translate(-1px, 1px); filter: drop-shadow(0 0 9px rgba(250, 204, 21, 0.9)); }
+  75% { transform: scale(1.15) translate(1px, -1px); filter: drop-shadow(0 0 11px rgba(234, 179, 8, 1)); }
+}
+
+@keyframes iconSlash {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.25) rotate(-12deg); filter: drop-shadow(0 0 8px rgba(248, 113, 113, 0.9)); }
+  100% { transform: scale(1.1) rotate(0deg); }
+}
+
+@keyframes iconShieldPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.9)); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes iconAstralTwinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5)); }
+  50% { transform: scale(1.2) rotate(180deg); filter: drop-shadow(0 0 12px rgba(217, 70, 239, 0.9)); }
+}
+
+.hover-icon-flame:hover {
+  animation: iconFlicker 0.6s ease-in-out infinite;
+}
+
+.hover-icon-zap:hover {
+  animation: iconZapJitter 0.3s ease-in-out infinite;
+}
+
+.hover-icon-sword:hover {
+  animation: iconSlash 0.4s ease-out forwards;
+}
+
+.hover-icon-shield:hover {
+  animation: iconShieldPop 0.4s ease-out forwards;
+}
+
+.hover-icon-astral:hover {
+  animation: iconAstralTwinkle 0.8s ease-in-out infinite;
+}
+
+/* Subtle Premium Card Entrance Animation */
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-entrance {
+  animation: cardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Combat Math Indicator Pulse */
+@keyframes combatPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), inset 0 0 8px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.9), inset 0 0 14px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.combat-math-glow {
+  animation: combatPulse 1.4s ease-in-out infinite;
+}
+

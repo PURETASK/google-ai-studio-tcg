@@ -1,0 +1,8 @@
+{
+  "name": "Remix Realm of Nexus TCG",
+  "description": "The complete Realm of Nexus TCG Design Ladder, interactive rules engine, balance suite, card compendium, and tactical arena.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
