@@ -1,5 +1,7 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
+import zlib from 'zlib';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
@@ -1293,6 +1295,130 @@ app.post('/api/art/generate-card-image', async (req, res) => {
   } catch (err: any) {
     console.error('Card image generation error:', err);
     res.status(500).json({ error: err.message || 'Failed to generate card artwork.' });
+  }
+});
+
+// Standard IEEE 802.3 CRC32 helper for building a valid PKZIP archive without external dependencies
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+    table[i] = c >>> 0;
+  }
+  return table;
+})();
+
+function computeCrc32(buf: Buffer): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) {
+    crc = CRC32_TABLE[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+// 1-Click Full Project .ZIP Exporter Endpoint
+app.get('/api/project/export-zip', (req, res) => {
+  try {
+    const rootDir = process.cwd();
+    const excludedDirs = new Set(['node_modules', '.git', 'dist', '.aistudio']);
+    const filesToZip: { relPath: string; data: Buffer }[] = [];
+
+    function walkDir(currentDir: string) {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (excludedDirs.has(entry.name)) continue;
+        const fullPath = path.join(currentDir, entry.name);
+        const relPath = path.relative(rootDir, fullPath).replace(/\\/g, '/');
+        // Skip user-uploaded temporary screenshot attachments
+        if (relPath.startsWith('public/assets/aistudio')) continue;
+        if (entry.isDirectory()) {
+          walkDir(fullPath);
+        } else if (entry.isFile()) {
+          try {
+            const data = fs.readFileSync(fullPath);
+            filesToZip.push({ relPath, data });
+          } catch {
+            // Ignore unreadable transient files
+          }
+        }
+      }
+    }
+
+    walkDir(rootDir);
+
+    const localFileChunks: Buffer[] = [];
+    const centralDirChunks: Buffer[] = [];
+    let currentOffset = 0;
+
+    for (const file of filesToZip) {
+      const nameBuf = Buffer.from(file.relPath, 'utf8');
+      const uncompressedData = file.data;
+      const crc = computeCrc32(uncompressedData);
+      const compressedData = zlib.deflateRawSync(uncompressedData);
+
+      // Local File Header (30 bytes + filename)
+      const localHeader = Buffer.alloc(30);
+      localHeader.writeUInt32LE(0x04034b50, 0); // Signature
+      localHeader.writeUInt16LE(20, 4);         // Version needed (2.0)
+      localHeader.writeUInt16LE(0x0800, 6);     // UTF-8 flag
+      localHeader.writeUInt16LE(8, 8);          // Compression method: Deflate (8)
+      localHeader.writeUInt16LE(0, 10);         // Mod time
+      localHeader.writeUInt16LE(0, 12);         // Mod date
+      localHeader.writeUInt32LE(crc, 14);       // CRC32
+      localHeader.writeUInt32LE(compressedData.length, 18); // Compressed size
+      localHeader.writeUInt32LE(uncompressedData.length, 22); // Uncompressed size
+      localHeader.writeUInt16LE(nameBuf.length, 26); // Filename length
+      localHeader.writeUInt16LE(0, 28);         // Extra field length
+
+      localFileChunks.push(localHeader, nameBuf, compressedData);
+
+      // Central Directory Header (46 bytes + filename)
+      const centralHeader = Buffer.alloc(46);
+      centralHeader.writeUInt32LE(0x02014b50, 0); // Signature
+      centralHeader.writeUInt16LE(20, 4);         // Version made by
+      centralHeader.writeUInt16LE(20, 6);         // Version needed
+      centralHeader.writeUInt16LE(0x0800, 8);     // UTF-8 flag
+      centralHeader.writeUInt16LE(8, 10);         // Deflate (8)
+      centralHeader.writeUInt16LE(0, 12);         // Mod time
+      centralHeader.writeUInt16LE(0, 14);         // Mod date
+      centralHeader.writeUInt32LE(crc, 16);       // CRC32
+      centralHeader.writeUInt32LE(compressedData.length, 20); // Compressed size
+      centralHeader.writeUInt32LE(uncompressedData.length, 24); // Uncompressed size
+      centralHeader.writeUInt16LE(nameBuf.length, 28); // Filename length
+      centralHeader.writeUInt16LE(0, 30);         // Extra field length
+      centralHeader.writeUInt16LE(0, 32);         // Comment length
+      centralHeader.writeUInt16LE(0, 34);         // Disk number
+      centralHeader.writeUInt16LE(0, 36);         // Internal attrs
+      centralHeader.writeUInt32LE(0, 38);         // External attrs
+      centralHeader.writeUInt32LE(currentOffset, 42); // Local header offset
+
+      centralDirChunks.push(centralHeader, nameBuf);
+      currentOffset += localHeader.length + nameBuf.length + compressedData.length;
+    }
+
+    const centralDirBuffer = Buffer.concat(centralDirChunks);
+    const endOfCentralDir = Buffer.alloc(22);
+    endOfCentralDir.writeUInt32LE(0x06054b50, 0); // EOCD Signature
+    endOfCentralDir.writeUInt16LE(0, 4);          // Disk number
+    endOfCentralDir.writeUInt16LE(0, 6);          // Start disk
+    endOfCentralDir.writeUInt16LE(filesToZip.length, 8);  // Entries on disk
+    endOfCentralDir.writeUInt16LE(filesToZip.length, 10); // Total entries
+    endOfCentralDir.writeUInt32LE(centralDirBuffer.length, 12); // Central dir size
+    endOfCentralDir.writeUInt32LE(currentOffset, 16); // Central dir offset
+    endOfCentralDir.writeUInt16LE(0, 20);         // Comment length
+
+    const fullZipBuffer = Buffer.concat([...localFileChunks, centralDirBuffer, endOfCentralDir]);
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="realm-of-nexus-tcg-project.zip"');
+    res.setHeader('Content-Length', String(fullZipBuffer.length));
+    res.send(fullZipBuffer);
+  } catch (err: any) {
+    console.error('Export project zip error:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate project zip.' });
   }
 });
 

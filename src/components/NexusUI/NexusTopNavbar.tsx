@@ -34,6 +34,7 @@ import {
   Menu,
   Castle,
   LayoutGrid,
+  Download,
   X
 } from 'lucide-react';
 
@@ -321,6 +322,19 @@ export const NexusTopNavbar: React.FC<NexusTopNavbarProps> = ({
               ⌘K
             </kbd>
           </button>
+
+          {/* 1-Click Full Project .ZIP Download Button */}
+          <a
+            href="/api/project/export-zip"
+            download="realm-of-nexus-tcg-project.zip"
+            id="nav-btn-export-project-zip"
+            onClick={() => soundEngine.playMicroSound('unlock')}
+            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-black text-xs font-cinzel font-black flex items-center gap-1.5 transition shadow-md"
+            title="Download the entire Realm of Nexus TCG project source code & card images as a .ZIP archive"
+          >
+            <Download size={13} />
+            <span>EXPORT .ZIP</span>
+          </a>
 
           {/* Domain Visuals & AI Art Studio Trigger */}
           {onOpenArtStudio && (

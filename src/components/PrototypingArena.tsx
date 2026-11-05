@@ -38,6 +38,8 @@ import {
   BookOpen
 } from 'lucide-react';
 import { soundEngine } from '../utils/audioEngine';
+import { Domain } from '../types';
+import { DOMAIN_VISUAL_IDENTITIES, CURATED_CARD_ARTWORKS } from '../data/cardArtPresets';
 
 export type PrototypingZoneId = 'LEFT_FLANK' | 'MAIN_CENTER' | 'RIGHT_FLANK';
 
@@ -108,6 +110,40 @@ export interface ResourcePool {
   primal: number;
   metal: number;
   aether: number;
+}
+
+// Helper to resolve Domain Visual Identity & Real Artwork for any PrototypeCard
+function getProtoCardVisuals(card: PrototypeCard) {
+  const nameLower = card.name.toLowerCase();
+  let domain: Domain = 'Sanctuary';
+  if (nameLower.includes('shadow') || nameLower.includes('acid') || nameLower.includes('necro')) {
+    domain = 'Abyss';
+  } else if (nameLower.includes('flame') || nameLower.includes('volcanic') || nameLower.includes('fire') || nameLower.includes('magma')) {
+    domain = 'Radiance';
+  } else if (nameLower.includes('behemoth') || nameLower.includes('horn') || nameLower.includes('primal') || card.category === 'BEAST') {
+    domain = 'Verdance';
+  } else if (nameLower.includes('ballista') || nameLower.includes('storm') || nameLower.includes('tempest')) {
+    domain = 'Tempest';
+  } else if (nameLower.includes('arcane') || nameLower.includes('artificer') || nameLower.includes('aether')) {
+    domain = 'Arcane';
+  } else {
+    domain = 'Sanctuary';
+  }
+
+  const identity = DOMAIN_VISUAL_IDENTITIES[domain] || DOMAIN_VISUAL_IDENTITIES.Sanctuary;
+  const domainArtPool = CURATED_CARD_ARTWORKS.filter(a => a.domain === domain);
+  const pool = domainArtPool.length > 0 ? domainArtPool : CURATED_CARD_ARTWORKS;
+  let hash = 0;
+  for (let i = 0; i < card.id.length; i++) {
+    hash = (hash * 31 + card.id.charCodeAt(i)) >>> 0;
+  }
+  const artPreset = pool[hash % pool.length];
+
+  return {
+    domain,
+    identity,
+    artUrl: artPreset.url
+  };
 }
 
 // Preset card catalog for the prototyping sandbox
@@ -1418,12 +1454,13 @@ export const PrototypingArena: React.FC = () => {
           </div>
         </div>
 
-        {/* Hand Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        {/* Hand Cards with Real Domain Artwork, Fonts & Borders */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
           {hand
             .filter(c => selectedCategoryFilter === 'ALL' || c.category === selectedCategoryFilter)
             .map(card => {
               const isSelected = card.id === selectedCardId;
+              const { domain, identity, artUrl } = getProtoCardVisuals(card);
               return (
                 <div
                   key={card.id}
@@ -1431,33 +1468,79 @@ export const PrototypingArena: React.FC = () => {
                     soundEngine.playMicroSound('click');
                     setSelectedCardId(isSelected ? null : card.id);
                   }}
-                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative ${
-                    isSelected
-                      ? 'bg-amber-950/60 border-amber-400 shadow-lg shadow-amber-500/20 scale-105'
-                      : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 hover:bg-stone-800/80'
+                  style={{
+                    borderColor: isSelected ? identity.secondaryHex : `${identity.primaryHex}88`,
+                    boxShadow: isSelected
+                      ? `0 0 24px ${identity.primaryHex}66`
+                      : `0 4px 16px rgba(0,0,0,0.65)`
+                  }}
+                  className={`rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+                    isSelected ? 'scale-[1.04] ring-2 ring-amber-300' : 'hover:scale-[1.02]'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xl">{card.emoji}</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-950 text-amber-400">
+                  {/* Full-Bleed Real Card Art Background */}
+                  <div className="relative h-28 w-full overflow-hidden bg-stone-950">
+                    <img
+                      src={artUrl}
+                      alt={card.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/35 to-transparent" />
+
+                    {/* Top Domain Kicker & Resource Cost Badge */}
+                    <div className="absolute top-1.5 inset-x-2 flex items-center justify-between">
+                      <span
+                        className="text-[9px] font-mono uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-sm border border-white/15"
+                        style={{ color: identity.primaryHex }}
+                      >
+                        {identity.sigil} {domain}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-sm text-amber-300 border border-amber-500/40">
                         {card.cost.valor ? `👑${card.cost.valor}` : ''}
                         {card.cost.primal ? `🌿${card.cost.primal}` : ''}
                         {card.cost.metal ? `⚙️${card.cost.metal}` : ''}
                         {card.cost.aether ? `✨${card.cost.aether}` : ''}
                       </span>
                     </div>
-                    <div className="text-xs font-cinzel font-bold text-amber-100 truncate">{card.name}</div>
-                    <div className="text-[10px] text-stone-400 font-mono mb-1">{card.category}</div>
-                    <div className="text-[10px] text-stone-300 leading-snug line-clamp-2">{card.description}</div>
                   </div>
 
-                  {card.power !== undefined && (
-                    <div className="mt-2 pt-1 border-t border-stone-800/80 flex items-center justify-between text-xs font-mono">
-                      <span className="text-red-400 font-bold">⚔️ {card.power}</span>
-                      <span className="text-stone-300 font-bold">❤️ {card.health}</span>
+                  {/* Domain-Tinted Glass HUD */}
+                  <div
+                    className="p-2.5 flex-1 flex flex-col justify-between"
+                    style={{
+                      background: `linear-gradient(180deg, ${identity.surfaceHex}ee 0%, #09090b 100%)`
+                    }}
+                  >
+                    <div>
+                      <div
+                        className={`text-xs font-bold truncate ${identity.fontClass}`}
+                        style={{ color: identity.accentHex }}
+                      >
+                        {card.name}
+                      </div>
+                      <div
+                        className="text-[9px] font-mono uppercase tracking-wider mb-1"
+                        style={{ color: identity.primaryHex }}
+                      >
+                        {card.category}
+                      </div>
+                      <div className="text-[10px] text-stone-300 leading-snug line-clamp-2">
+                        {card.description}
+                      </div>
                     </div>
-                  )}
+
+                    {card.power !== undefined && (
+                      <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-xs font-mono-tabular">
+                        <span className="px-1.5 py-0.5 rounded bg-red-950/80 border border-red-500/40 text-red-300 font-bold">
+                          ⚔️ {card.power}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-bold">
+                          🛡️ {card.health}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
