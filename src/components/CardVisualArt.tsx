@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../types';
+import { getResolvedCardArtUrl } from '../data/cardArtPresets';
 
 interface CardVisualArtProps {
   card: Card;
@@ -12,17 +13,25 @@ export const CardVisualArt: React.FC<CardVisualArtProps> = ({
   className = '',
   size = 'md'
 }) => {
+  const [imgError, setImgError] = useState(false);
+
+  const resolvedArtUrl = card ? getResolvedCardArtUrl(card) : '';
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedArtUrl, card?.id]);
+
   if (!card) return null;
 
   const { domain, cardType, id = '', name = '' } = card;
   const rawId = id || '';
 
   const defaultThemes: Record<string, { primaryColor: string; glowColor: string; bgGradient: string; iconSymbol: string }> = {
-    Radiance: { primaryColor: '#f59e0b', glowColor: '#fbbf24', bgGradient: 'from-amber-950 via-stone-900 to-stone-950', iconSymbol: '⚔️' },
+    Radiance: { primaryColor: '#ef4444', glowColor: '#f97316', bgGradient: 'from-red-950 via-stone-900 to-stone-950', iconSymbol: '🔥' },
     Verdance: { primaryColor: '#10b981', glowColor: '#34d399', bgGradient: 'from-emerald-950 via-stone-900 to-stone-950', iconSymbol: '🌿' },
     Arcane: { primaryColor: '#3b82f6', glowColor: '#60a5fa', bgGradient: 'from-blue-950 via-stone-900 to-stone-950', iconSymbol: '🔮' },
     Abyss: { primaryColor: '#a855f7', glowColor: '#c084fc', bgGradient: 'from-purple-950 via-stone-900 to-stone-950', iconSymbol: '💀' },
-    Sanctuary: { primaryColor: '#eab308', glowColor: '#fde047', bgGradient: 'from-yellow-950 via-stone-900 to-stone-950', iconSymbol: '🛡️' },
+    Sanctuary: { primaryColor: '#eab308', glowColor: '#fde047', bgGradient: 'from-amber-950 via-stone-900 to-stone-950', iconSymbol: '☀️' },
     Tempest: { primaryColor: '#06b6d4', glowColor: '#22d3ee', bgGradient: 'from-cyan-950 via-stone-900 to-stone-950', iconSymbol: '⚡' },
   };
 
@@ -57,31 +66,32 @@ export const CardVisualArt: React.FC<CardVisualArtProps> = ({
     domain === 'Abyss' ? 'fleau' : 'ophanim'
   );
 
-  // If a custom/uploaded image artUrl is present, render with ambient fill and crisp contained full-view (never cropped or cut off)
-  if (card.artUrl) {
+  // Render full-bleed real artwork with domain ambient lighting and measured contrast scrims
+  if (resolvedArtUrl && !imgError) {
     return (
       <div className={`relative w-full h-full overflow-hidden flex items-center justify-center select-none bg-stone-950 ${className}`}>
-        {/* Ambient blurred glow background so zero space is left empty or harsh */}
+        {/* Ambient blurred glow background */}
         <img
-          src={card.artUrl}
+          src={resolvedArtUrl}
           alt=""
           aria-hidden="true"
           referrerPolicy="no-referrer"
-          className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-50 brightness-75 select-none pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-55 brightness-75 select-none pointer-events-none"
         />
 
-        {/* Primary Full Artwork: object-contain guarantees the entire image is visible without cutting off any edges */}
+        {/* Primary Full Artwork: object-cover delivers full-bleed cinematic card art */}
         <img
-          src={card.artUrl}
+          src={resolvedArtUrl}
           alt={card.name}
           referrerPolicy="no-referrer"
-          className="relative z-10 w-full h-full object-contain object-center transition-transform duration-500 hover:scale-[1.02] drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]"
+          onError={() => setImgError(true)}
+          className="relative z-10 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.04] drop-shadow-[0_10px_25px_rgba(0,0,0,0.85)]"
         />
 
         {/* Subtle cinematic gradient vignette & realm glow */}
-        <div className="absolute inset-0 pointer-events-none z-20 bg-gradient-to-t from-stone-950/80 via-transparent to-stone-950/40" />
+        <div className="absolute inset-0 pointer-events-none z-20 bg-gradient-to-t from-stone-950/85 via-transparent to-stone-950/45" />
         <div 
-          className="absolute inset-0 pointer-events-none z-20 mix-blend-color-dodge opacity-25"
+          className="absolute inset-0 pointer-events-none z-20 mix-blend-color-dodge opacity-20"
           style={{ backgroundColor: artVisualTheme.primaryColor || '#eab308' }}
         />
       </div>

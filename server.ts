@@ -1129,6 +1129,173 @@ Provide an authoritative referee verdict with execution steps and official citat
   }
 });
 
+// Bespoke Domain-Specific AI Card Artwork Generator Endpoint
+app.post('/api/art/generate-card-image', async (req, res) => {
+  try {
+    const { card, customPrompt } = req.body || {};
+    if (!card || !card.name) {
+      return res.status(400).json({ error: 'Card data with name is required to generate artwork.' });
+    }
+
+    const domain = card.domain || 'Radiance';
+    const domainPrompts: Record<string, string> = {
+      Sanctuary: 'celestial ivory marble temple, burnished gold filigree, warm solar light rays, divine seraphic wings, sacred geometric halo',
+      Radiance: 'molten volcanic obsidian forge, searing solar flare, glowing crimson magma cracks, cinder sparks, infernal gold armor',
+      Verdance: 'ancient bioluminescent elderwood canopy, glowing emerald runes, living bark and thorns, primal forest mist, sunbeams',
+      Arcane: 'deep astral nebula cosmos, floating sapphire runestones, sacred leyline astrolabe, violet chronomancy energy arcs',
+      Tempest: 'crackling tempest stormcloud vortex, anodized cobalt sky-harbor, cyan arc-lightning bolts, supersonic wind shear',
+      Abyss: 'eldritch necrotic void cathedral, obsidian bone reliquary, spectral amethyst soulfire, swirling shadow tendrils'
+    };
+
+    const promptText =
+      customPrompt ||
+      `Masterpiece dark-fantasy trading card illustration of "${card.name}", ${card.subtitle || card.cardType || 'Champion'}. ${
+        card.lore ? card.lore.slice(0, 160) : ''
+      }. Environment & Palette: ${domainPrompts[domain] || domainPrompts.Radiance}. Dramatic rim lighting, rich painterly brushwork, Magic: The Gathering Collector Booster borderless concept art, 8k resolution, no text, no borders, no UI.`;
+
+    const ai = getAI();
+    if (ai) {
+      const imageModels = ['gemini-3.1-flash-lite-image', 'gemini-2.5-flash-image'];
+      for (const modelName of imageModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: promptText,
+            config: {
+              imageConfig: {
+                aspectRatio: '4:3'
+              }
+            }
+          });
+
+          const parts = response.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            if (part.inlineData && part.inlineData.data) {
+              const mimeType = part.inlineData.mimeType || 'image/png';
+              return res.json({
+                artUrl: `data:${mimeType};base64,${part.inlineData.data}`,
+                source: modelName,
+                prompt: promptText
+              });
+            }
+          }
+        } catch (imgErr: any) {
+          console.log(`[Art Generator] Model ${modelName} unavailable (${imgErr?.status || imgErr?.message || 'skip'}), trying next...`);
+        }
+      }
+    }
+
+    // Bespoke High-Resolution Procedural Domain Illustration Synthesizer Fallback
+    const seedStr = `${card.id || ''}-${card.name}-${domain}-${Date.now() % 1000}`;
+    let hash = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0;
+    }
+
+    const palettes: Record<string, { bg1: string; bg2: string; primary: string; secondary: string; glow: string }> = {
+      Sanctuary: { bg1: '#1C1608', bg2: '#3B2B0B', primary: '#FDE68A', secondary: '#F59E0B', glow: '#FEF08A' },
+      Radiance: { bg1: '#1F0706', bg2: '#450A0A', primary: '#FCA5A5', secondary: '#EA580C', glow: '#F97316' },
+      Verdance: { bg1: '#041E15', bg2: '#064E3B', primary: '#6EE7B7', secondary: '#10B981', glow: '#A3E635' },
+      Arcane: { bg1: '#0A0F29', bg2: '#1E1B4B', primary: '#93C5FD', secondary: '#6366F1', glow: '#38BDF8' },
+      Tempest: { bg1: '#071924', bg2: '#0F3042', primary: '#67E8F9', secondary: '#0284C7', glow: '#22D3EE' },
+      Abyss: { bg1: '#12061F', bg2: '#2E1065', primary: '#D8B4FE', secondary: '#9333EA', glow: '#E879F9' }
+    };
+    const pal = palettes[domain] || palettes.Radiance;
+    const cx = 360 + ((hash % 80) - 40);
+    const cy = 240 + (((hash >> 4) % 60) - 30);
+
+    // Domain-specific centerpiece geometry
+    let centerpieceSvg = '';
+    if (domain === 'Sanctuary') {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <circle r="155" fill="none" stroke="${pal.primary}" stroke-width="2" stroke-dasharray="10 6" opacity="0.55" />
+          <circle r="120" fill="none" stroke="${pal.secondary}" stroke-width="3" opacity="0.75" />
+          <polygon points="0,-165 38,-45 165,-45 62,25 100,145 0,70 -100,145 -62,25 -165,-45 -38,-45" fill="url(#coreGrad)" opacity="0.85" stroke="${pal.primary}" stroke-width="2.5" />
+          <path d="M-190,10 Q-110,-120 -25,-25 Q-95,35 -190,10 Z" fill="${pal.primary}" opacity="0.65" />
+          <path d="M190,10 Q110,-120 25,-25 Q95,35 190,10 Z" fill="${pal.primary}" opacity="0.65" />
+          <circle r="44" fill="${pal.glow}" opacity="0.9" />
+        </g>`;
+    } else if (domain === 'Radiance') {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <polygon points="0,-185 55,-60 180,-90 95,15 165,135 35,85 0,185 -35,85 -165,135 -95,15 -180,-90 -55,-60" fill="url(#coreGrad)" stroke="${pal.primary}" stroke-width="2.5" opacity="0.9" />
+          <path d="M0,-150 C55,-70 95,20 0,145 C-95,20 -55,-70 0,-150 Z" fill="${pal.glow}" opacity="0.75" />
+          <circle r="52" fill="#FFF7ED" opacity="0.85" />
+        </g>`;
+    } else if (domain === 'Verdance') {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <circle r="150" fill="none" stroke="${pal.secondary}" stroke-width="3" opacity="0.5" />
+          <path d="M0,165 L0,-95 M0,-20 L-85,-105 M0,10 L90,-85 M0,-55 L-50,-145 M0,-55 L55,-140" stroke="${pal.primary}" stroke-width="12" stroke-linecap="round" opacity="0.85" />
+          <circle cx="0" cy="-120" r="65" fill="url(#coreGrad)" opacity="0.8" />
+          <circle cx="-85" cy="-105" r="48" fill="url(#coreGrad)" opacity="0.75" />
+          <circle cx="90" cy="-85" r="52" fill="url(#coreGrad)" opacity="0.75" />
+          <circle cx="0" cy="-35" r="28" fill="${pal.glow}" opacity="0.9" />
+        </g>`;
+    } else if (domain === 'Tempest') {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <circle r="160" fill="none" stroke="${pal.primary}" stroke-width="2.5" stroke-dasharray="18 8" opacity="0.65" />
+          <polygon points="25,-185 -75,-10 10,-10 -35,185 95,-5 10,-5" fill="${pal.glow}" stroke="#FFFFFF" stroke-width="3" opacity="0.95" />
+          <path d="M-190,-50 Q0,-160 190,-50 M-170,60 Q0,170 170,60" fill="none" stroke="${pal.primary}" stroke-width="5" opacity="0.6" />
+        </g>`;
+    } else if (domain === 'Arcane') {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <circle r="165" fill="none" stroke="${pal.primary}" stroke-width="2" opacity="0.7" />
+          <circle r="130" fill="none" stroke="${pal.glow}" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.8" />
+          <polygon points="0,-150 130,75 -130,75" fill="none" stroke="${pal.primary}" stroke-width="3" opacity="0.85" />
+          <polygon points="0,150 130,-75 -130,-75" fill="none" stroke="${pal.secondary}" stroke-width="3" opacity="0.85" />
+          <polygon points="0,-95 65,0 0,95 -65,0" fill="url(#coreGrad)" stroke="${pal.glow}" stroke-width="2.5" />
+          <circle r="26" fill="#FFFFFF" opacity="0.95" />
+        </g>`;
+    } else {
+      centerpieceSvg = `
+        <g transform="translate(${cx}, ${cy})">
+          <circle r="155" fill="#05020A" stroke="${pal.secondary}" stroke-width="4" opacity="0.9" />
+          <circle r="120" fill="none" stroke="${pal.primary}" stroke-width="2" stroke-dasharray="12 8" opacity="0.7" />
+          <path d="M-140,0 Q0,-125 140,0 Q0,125 -140,0 Z" fill="url(#coreGrad)" stroke="${pal.glow}" stroke-width="3" opacity="0.9" />
+          <ellipse cx="0" cy="0" rx="22" ry="58" fill="#090314" stroke="${pal.primary}" stroke-width="3" />
+        </g>`;
+    }
+
+    const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+      <defs>
+        <radialGradient id="bgGrad" cx="50%" cy="42%" r="75%">
+          <stop offset="0%" stop-color="${pal.bg2}" />
+          <stop offset="65%" stop-color="${pal.bg1}" />
+          <stop offset="100%" stop-color="#050507" />
+        </radialGradient>
+        <radialGradient id="coreGrad" cx="50%" cy="50%" r="55%">
+          <stop offset="0%" stop-color="${pal.glow}" />
+          <stop offset="55%" stop-color="${pal.secondary}" />
+          <stop offset="100%" stop-color="${pal.bg1}" stop-opacity="0.2" />
+        </radialGradient>
+        <radialGradient id="auraGlow" cx="50%" cy="45%" r="48%">
+          <stop offset="0%" stop-color="${pal.glow}" stop-opacity="0.55" />
+          <stop offset="50%" stop-color="${pal.secondary}" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="${pal.bg1}" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="800" height="600" fill="url(#bgGrad)" />
+      <circle cx="${cx}" cy="${cy}" r="290" fill="url(#auraGlow)" />
+      ${centerpieceSvg}
+      <path d="M0,490 Q220,430 420,485 T800,460 L800,600 L0,600 Z" fill="#060609" opacity="0.88" />
+    </svg>`;
+
+    const encodedSvg = `data:image/svg+xml;utf8,${encodeURIComponent(svgMarkup)}`;
+    return res.json({
+      artUrl: encodedSvg,
+      source: 'nexus-domain-synthesizer',
+      prompt: promptText
+    });
+  } catch (err: any) {
+    console.error('Card image generation error:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate card artwork.' });
+  }
+});
+
 // Vite Middleware for Development / Static serving for production
 async function start() {
   if (process.env.NODE_ENV !== 'production') {

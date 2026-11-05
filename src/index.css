@@ -13,6 +13,46 @@
   .font-uncial {
     font-family: 'Uncial Antiqua', cursive;
   }
+  .font-pirata {
+    font-family: 'Pirata One', system-ui, serif;
+  }
+  .font-syne {
+    font-family: 'Syne', sans-serif;
+  }
+  .font-forum {
+    font-family: 'Forum', 'Cinzel', serif;
+  }
+  .font-mono-tabular {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Domain-Specific Title Typography */
+  .font-domain-sanctuary {
+    font-family: 'Cinzel Decorative', 'Cinzel', serif;
+    letter-spacing: 0.04em;
+  }
+  .font-domain-radiance {
+    font-family: 'Uncial Antiqua', 'Cinzel', cursive;
+    letter-spacing: 0.03em;
+  }
+  .font-domain-verdance {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+  }
+  .font-domain-arcane {
+    font-family: 'Forum', 'Cinzel', serif;
+    letter-spacing: 0.06em;
+  }
+  .font-domain-tempest {
+    font-family: 'Syne', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.03em;
+  }
+  .font-domain-abyss {
+    font-family: 'Pirata One', 'Cinzel Decorative', serif;
+    letter-spacing: 0.05em;
+  }
 }
 
 /* Custom scrollbars */

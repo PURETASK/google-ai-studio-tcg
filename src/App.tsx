@@ -31,6 +31,7 @@ import { AudioSanctumView } from './components/AudioSanctumView';
 import { ChroniclesCampaignView } from './components/ChroniclesCampaignView';
 import { TriForgeSiegeArena } from './components/TriForgeSiege/TriForgeSiegeArena';
 import { PrototypingArena } from './components/PrototypingArena';
+import { RosterArtGeneratorModal } from './components/RosterArtGeneratorModal';
 import {
   initCustomCardStorage,
   saveCustomCard,
@@ -46,6 +47,7 @@ export default function App() {
   const [particleDensity, setParticleDensity] = useState<'low' | 'medium' | 'high'>('medium');
   const [isAtlasOpen, setIsAtlasOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isRosterArtStudioOpen, setIsRosterArtStudioOpen] = useState<boolean>(false);
 
   const [cardsList, setCardsList] = useState<Card[]>(() => {
     const customCards = getCustomCardsSync();
@@ -116,19 +118,25 @@ export default function App() {
     setInspectedCard(newCard);
   };
 
+  // Handle single card update (e.g. new artwork applied or AI-generated)
+  const handleUpdateSingleCard = (updatedCard: Card) => {
+    setCardsList(prev => prev.map(c => (c.id === updatedCard.id ? updatedCard : c)));
+    setInspectedCard(prev => (prev && prev.id === updatedCard.id ? updatedCard : prev));
+  };
+
   // Handle bulk cards import into local database
   const handleBulkImportCards = (newCards: Card[]) => {
     if (!newCards || newCards.length === 0) return;
     setCardsList(prev => {
-      const newCardIds = new Set(newCards.map(c => c.id));
-      const filtered = prev.filter(c => !newCardIds.has(c.id));
-      return [...newCards, ...filtered];
+      const map = new Map<string, Card>();
+      prev.forEach(c => map.set(c.id, c));
+      newCards.forEach(c => map.set(c.id, c));
+      return Array.from(map.values());
     });
     // Atomic batch save to IndexedDB with quota-safe localStorage mirroring
     saveCustomCardsBatch(newCards).catch(e => {
       console.warn('Notice during bulk card import:', e);
     });
-    setInspectedCard(newCards[0]);
   };
 
   // Launch battle with specific deck
@@ -168,6 +176,7 @@ export default function App() {
         activeRealmId={activeRealmId}
         onOpenAtlas={() => setIsAtlasOpen(true)}
         onOpenSearch={() => setIsCommandPaletteOpen(true)}
+        onOpenArtStudio={() => setIsRosterArtStudioOpen(true)}
         totalCardsCount={cardsList.length}
       />
 
@@ -263,6 +272,7 @@ export default function App() {
             cards={cardsList}
             onInspectCard={(card) => setInspectedCard(card)}
             onBulkImportCards={handleBulkImportCards}
+            onOpenArtStudio={() => setIsRosterArtStudioOpen(true)}
           />
         )}
 
@@ -372,10 +382,21 @@ export default function App() {
         onClose={() => setIsGlobalTutorialOpen(false)}
       />
 
+      {/* ================= DOMAIN VISUALS & BATCH AI ART STUDIO MODAL ================= */}
+      <RosterArtGeneratorModal
+        isOpen={isRosterArtStudioOpen}
+        onClose={() => setIsRosterArtStudioOpen(false)}
+        cards={cardsList}
+        onUpdateCard={handleUpdateSingleCard}
+        onBulkUpdateCards={handleBulkImportCards}
+        onInspectCard={(card) => setInspectedCard(card)}
+      />
+
       {/* ================= FULL SCREEN CARD INSPECTOR MODAL ================= */}
       <CardModal
         card={inspectedCard}
         onClose={() => setInspectedCard(null)}
+        onUpdateCard={handleUpdateSingleCard}
       />
 
       {/* ================= FOOTER ================= */}

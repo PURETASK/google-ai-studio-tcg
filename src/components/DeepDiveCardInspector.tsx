@@ -37,18 +37,40 @@ import {
   Info,
   ChevronRight,
   TrendingUp,
-  Cpu
+  Cpu,
+  Image as ImageIcon,
+  Upload,
+  Link,
+  Wand2,
+  RefreshCw
 } from 'lucide-react';
+import { CURATED_CARD_ARTWORKS, generateRecommendedArtPrompt, DOMAIN_VISUAL_IDENTITIES } from '../data/cardArtPresets';
+import { saveCustomCard } from '../utils/customCardStorage';
 
 export interface DeepDiveCardInspectorProps {
   card: Card | null;
   onClose: () => void;
+  onUpdateCard?: (updated: Card) => void;
 }
 
-export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ card, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'sheet' | 'radar' | 'glyphs' | '3d-studio' | 'anatomy' | 'evolution'>('sheet');
+export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ card, onClose, onUpdateCard }) => {
+  const [activeTab, setActiveTab] = useState<'sheet' | 'radar' | 'glyphs' | '3d-studio' | 'anatomy' | 'evolution' | 'artwork'>('sheet');
   const [selectedFoil, setSelectedFoil] = useState<'none' | 'gold' | 'prismatic' | 'cosmic'>('prismatic');
   const [copied, setCopied] = useState(false);
+
+  // Local card state for live artwork updates
+  const [currentCard, setCurrentCard] = useState<Card | null>(card);
+  const [customArtInput, setCustomArtInput] = useState<string>(card?.artUrl || '');
+  const [promptCopied, setPromptCopied] = useState(false);
+  const [artNotice, setArtNotice] = useState<string | null>(null);
+  const [isGeneratingAiArt, setIsGeneratingAiArt] = useState(false);
+
+  useEffect(() => {
+    if (card) {
+      setCurrentCard(card);
+      setCustomArtInput(card.artUrl || '');
+    }
+  }, [card]);
 
   // 3D Tilt interactive controller states
   const cardContainerRef = useRef<HTMLDivElement>(null);
@@ -84,18 +106,8 @@ export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ ca
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getDomainColor = (d: Domain) => {
-    switch (d) {
-      case 'Sanctuary': return '#eab308';
-      case 'Radiance': return '#ef4444';
-      case 'Verdance': return '#10b981';
-      case 'Arcane': return '#3b82f6';
-      case 'Abyss': return '#a855f7';
-      default: return '#71717a';
-    }
-  };
-
-  const domainColor = getDomainColor(card.domain);
+  const domainIdentity = DOMAIN_VISUAL_IDENTITIES[card.domain] || DOMAIN_VISUAL_IDENTITIES.Radiance;
+  const domainColor = domainIdentity.primaryHex;
 
   // Derive 5-Axis Attributes (Damage, Durability, Mobility, Utility, Control)
   const attrs = card.attributes || {
@@ -119,6 +131,79 @@ export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ ca
   };
 
   const archetypeInfo = getArchetype();
+
+  const handleApplyArtUrl = (newUrl: string) => {
+    if (!card) return;
+    const clean = newUrl.trim();
+    const updated: Card = {
+      ...(currentCard || card),
+      artUrl: clean || undefined
+    };
+    card.artUrl = clean || undefined;
+    setCurrentCard(updated);
+    setCustomArtInput(clean);
+    soundEngine.playMicroSound('select');
+    
+    // Persist to indexedDB / storage
+    saveCustomCard(updated).catch(e => console.warn('Could not persist card art:', e));
+    if (onUpdateCard) onUpdateCard(updated);
+    
+    setArtNotice(clean ? 'High-definition artwork applied to card!' : 'Artwork reset to default realm visual.');
+    setTimeout(() => setArtNotice(null), 3500);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        handleApplyArtUrl(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCopyPrompt = () => {
+    if (!card) return;
+    const prompt = generateRecommendedArtPrompt(currentCard || card);
+    navigator.clipboard.writeText(prompt);
+    setPromptCopied(true);
+    soundEngine.playMicroSound('click');
+    setTimeout(() => setPromptCopied(false), 2500);
+  };
+
+  const handleGenerateAiArt = async () => {
+    const targetCard = currentCard || card;
+    if (!targetCard || isGeneratingAiArt) return;
+    setIsGeneratingAiArt(true);
+    setArtNotice('Synthesizing bespoke domain artwork via Nexus AI Studio...');
+    soundEngine.playMicroSound('select');
+    try {
+      const response = await fetch('/api/art/generate-card-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card: targetCard,
+          customPrompt: generateRecommendedArtPrompt(targetCard)
+        })
+      });
+      const data = await response.json();
+      if (data && data.artUrl) {
+        handleApplyArtUrl(data.artUrl);
+        setArtNotice(`Bespoke ${targetCard.domain} artwork forged (${data.source || 'AI Engine'})!`);
+      } else {
+        setArtNotice('Could not synthesize image; please select a curated masterpiece below.');
+      }
+    } catch (err) {
+      console.error('AI Art synthesis failed:', err);
+      setArtNotice('Network error during synthesis; please pick from the gallery below.');
+    } finally {
+      setIsGeneratingAiArt(false);
+    }
+  };
 
   // Radar Polygon Geometry
   const radarPoints = [
@@ -319,6 +404,18 @@ export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ ca
               <span>Evolution Awakening</span>
             </button>
           )}
+
+          <button
+            onClick={() => setActiveTab('artwork')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'artwork' 
+                ? 'bg-amber-500 text-black shadow-md' 
+                : 'bg-stone-800/70 text-stone-300 hover:bg-stone-700'
+            }`}
+          >
+            <ImageIcon size={13} />
+            <span>Real Artwork Studio</span>
+          </button>
         </div>
 
         {/* Content Body */}
@@ -346,7 +443,7 @@ export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ ca
               >
                 <div className="w-full max-w-[280px] shadow-2xl relative">
                   <CardItem 
-                    card={card} 
+                    card={currentCard || card} 
                     size="lg" 
                     foilType={selectedFoil}
                     interactive={false}
@@ -868,6 +965,183 @@ export const DeepDiveCardInspector: React.FC<DeepDiveCardInspectorProps> = ({ ca
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* ---------------- TAB 7: REAL ARTWORK STUDIO & ASSET BINDING ---------------- */}
+            {activeTab === 'artwork' && (
+              <div className="space-y-5 animate-fade-in">
+                {artNotice && (
+                  <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-200 text-xs font-cinzel font-bold flex items-center justify-between shadow-lg">
+                    <span>✨ {artNotice}</span>
+                  </div>
+                )}
+
+                {/* Section Header */}
+                <div className="p-4 rounded-2xl bg-stone-900 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-cinzel text-sm font-bold text-amber-300 uppercase tracking-widest flex items-center gap-2">
+                      <ImageIcon size={16} />
+                      <span>Card Artwork Studio & Real Image Integration</span>
+                    </h4>
+                    <p className="text-stone-400 text-xs mt-1">
+                      Domain Font: <strong className="text-amber-200">{domainIdentity.fontDisplayLabel}</strong> • Frame Silhouette: <strong className="text-amber-200">{domainIdentity.frameTitle}</strong>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={isGeneratingAiArt}
+                      onClick={handleGenerateAiArt}
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-black font-cinzel font-black text-xs shadow-lg transition flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Wand2 size={14} className={isGeneratingAiArt ? 'animate-spin' : ''} />
+                      <span>{isGeneratingAiArt ? 'Synthesizing...' : '1-Click Generate AI Art'}</span>
+                    </button>
+                    {currentCard?.artUrl && (
+                      <button
+                        type="button"
+                        onClick={() => handleApplyArtUrl('')}
+                        className="px-3 py-2 rounded-xl bg-stone-950 hover:bg-red-950/80 text-stone-400 hover:text-red-300 border border-stone-800 hover:border-red-700 text-xs font-mono transition flex items-center gap-1.5"
+                      >
+                        <RefreshCw size={13} />
+                        <span>Reset</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Method 1: Upload from Computer */}
+                <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
+                  <span className="font-cinzel font-bold text-xs uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
+                    <Upload size={14} className="text-amber-400" />
+                    <span>Method 1: Upload Image From Your Device</span>
+                  </span>
+                  <p className="text-stone-400 text-xs">
+                    Select any JPG, PNG, or WebP illustration from your computer. The image is instantly embedded directly onto this card.
+                  </p>
+                  <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-stone-700 hover:border-amber-500/60 bg-stone-950/80 hover:bg-stone-950 cursor-pointer transition group">
+                    <Upload size={22} className="text-stone-500 group-hover:text-amber-400 group-hover:scale-110 transition" />
+                    <span className="text-xs font-cinzel font-bold text-stone-300 group-hover:text-amber-200 mt-2">
+                      Click to Browse Files or Drag Image Here
+                    </span>
+                    <span className="text-[10px] font-mono text-stone-300 mt-1">
+                      PNG, JPG, WEBP • Works completely in-browser
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Method 2: Paste Web Image URL */}
+                <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
+                  <span className="font-cinzel font-bold text-xs uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
+                    <Link size={14} className="text-amber-400" />
+                    <span>Method 2: Paste Online Image URL</span>
+                  </span>
+                  <p className="text-stone-400 text-xs">
+                    Paste a direct image link from ArtStation, Imgur, Pinterest, Discord CDN, Midjourney, or any image host.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={customArtInput}
+                      onChange={(e) => setCustomArtInput(e.target.value)}
+                      placeholder="https://example.com/fantasy_champion_art.jpg"
+                      className="flex-1 px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-xs text-stone-100 font-mono placeholder:text-stone-600 focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyArtUrl(customArtInput)}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-cinzel font-bold text-xs shadow-md transition hover:scale-105 active:scale-95"
+                    >
+                      Apply URL
+                    </button>
+                  </div>
+                </div>
+
+                {/* Method 3: Pick from Curated Masterpiece Gallery */}
+                <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-cinzel font-bold text-xs uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-amber-400" />
+                      <span>Method 3: 1-Click Curated High-Fantasy Gallery</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400">
+                      {CURATED_CARD_ARTWORKS.length} Masterpieces Available
+                    </span>
+                  </div>
+                  <p className="text-stone-400 text-xs">
+                    Choose from authentic high-resolution AI fantasy paintings generated specifically for this card game universe:
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {CURATED_CARD_ARTWORKS.map((art) => {
+                      const isSelected = currentCard?.artUrl === art.url;
+                      return (
+                        <button
+                          key={art.id}
+                          type="button"
+                          onClick={() => handleApplyArtUrl(art.url)}
+                          className={`group relative rounded-xl overflow-hidden border text-left transition-all ${
+                            isSelected
+                              ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+                              : 'border-stone-800 hover:border-amber-500/60'
+                          }`}
+                        >
+                          <div className="aspect-[4/3] w-full bg-stone-950 overflow-hidden relative">
+                            <img
+                              src={art.url}
+                              alt={art.title}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover transition duration-300 group-hover:scale-110"
+                            />
+                            {isSelected && (
+                              <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-black font-mono text-[9px] font-bold">
+                                ACTIVE
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2 bg-stone-950/95 space-y-0.5">
+                            <span className="font-cinzel font-bold text-xs text-amber-200 block truncate">
+                              {art.title}
+                            </span>
+                            <span className="text-[10px] text-stone-400 block truncate">
+                              {art.subtitle}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Method 4: AI Art Prompt Generator */}
+                <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-cinzel font-bold text-xs uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                      <Wand2 size={14} className="text-purple-400" />
+                      <span>Method 4: Prompt for AI Studio / Midjourney / Stable Diffusion</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyPrompt}
+                      className="px-3 py-1 rounded-xl bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-700 text-xs font-mono flex items-center gap-1.5 transition"
+                    >
+                      {promptCopied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+                      <span>{promptCopied ? 'Copied Prompt!' : 'Copy Prompt'}</span>
+                    </button>
+                  </div>
+                  <p className="text-stone-400 text-xs">
+                    Want to generate a custom image tailored specifically to <strong>{currentCard?.name || card.name}</strong>? Copy this optimized high-fantasy prompt:
+                  </p>
+                  <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 text-[11px] font-mono text-purple-200 select-all leading-relaxed">
+                    {generateRecommendedArtPrompt(currentCard || card)}
+                  </div>
                 </div>
               </div>
             )}

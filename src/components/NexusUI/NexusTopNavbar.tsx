@@ -43,6 +43,7 @@ interface NexusTopNavbarProps {
   activeRealmId: string;
   onOpenAtlas: () => void;
   onOpenSearch: () => void;
+  onOpenArtStudio?: () => void;
   totalCardsCount: number;
 }
 
@@ -65,6 +66,7 @@ export const NexusTopNavbar: React.FC<NexusTopNavbarProps> = ({
   activeRealmId,
   onOpenAtlas,
   onOpenSearch,
+  onOpenArtStudio,
   totalCardsCount
 }) => {
   const currentRealm = REALM_ART_THEMES[activeRealmId] || REALM_ART_THEMES.Nexus;
@@ -319,6 +321,23 @@ export const NexusTopNavbar: React.FC<NexusTopNavbarProps> = ({
               ⌘K
             </kbd>
           </button>
+
+          {/* Domain Visuals & AI Art Studio Trigger */}
+          {onOpenArtStudio && (
+            <button
+              type="button"
+              id="nav-btn-art-studio"
+              onClick={() => {
+                soundEngine.playMicroSound('select');
+                onOpenArtStudio();
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-black text-xs font-cinzel font-black flex items-center gap-1.5 transition shadow-md"
+              title="Open 6-Domain Borders, Fonts & Batch AI Card Art Studio"
+            >
+              <Palette size={13} />
+              <span className="hidden lg:inline">Domain Art Studio</span>
+            </button>
+          )}
 
           {/* Atlas Map Trigger */}
           <button

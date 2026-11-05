@@ -5,6 +5,7 @@ import { DeepDiveCardInspector, DeepDiveCardInspectorProps } from './DeepDiveCar
 export interface CardModalProps {
   card: Card | null;
   onClose: () => void;
+  onUpdateCard?: (updated: Card) => void;
 }
 
 /**

@@ -74,6 +74,7 @@ export const CARDS_DATABASE: Card[] = [
       { label: 'Strength: 9.5', title: 'World Coil Juggernaut', description: 'Pummels fortified stone barriers to liquid slag.' },
       { label: 'Magma Regeneration', title: 'Lava Bath', description: 'Heals 3 HP at the start of each turn if in fire.' }
     ],
+    artUrl: '/src/assets/images/magma_jormungandr_1793833158692.jpg',
     artVisualTheme: {
       primaryColor: '#f97316',
       glowColor: '#c2410c',
@@ -81,6 +82,84 @@ export const CARDS_DATABASE: Card[] = [
       iconSymbol: '🐉',
       badgeText: 'ELITE HERO',
       visualMotif: 'jormungandr'
+    }
+  },
+  {
+    id: 'SAN-CHP-001-VALERIA-SOLARIS',
+    name: 'Valeria Solaris',
+    subtitle: 'GRAND PALADIN OF THE DAWN • MYTHIC CHAMPION • TIER S',
+    alias: 'The Dawn Valkyrie',
+    domain: 'Sanctuary',
+    secondaryDomain: 'Radiance',
+    cardType: 'Champion',
+    subtype: 'Solar Dawn Paladin / High Templar',
+    cost: 7,
+    rarity: 'Mythic',
+    power: 8,
+    defense: 12,
+    speed: 7,
+    divineRank: 5,
+    powerStars: 10,
+    powerLevelTier: 'TIER S',
+    laneRole: 'Center',
+    affiliation: 'Solar Sanctuary',
+    primaryPower: 'Solar Wrath / Aegis Bastion',
+    quote: '"Stand firm behind my shield. Where the dawn breaks, no shadow may endure."',
+    lore: 'Supreme commander of the Sanctuary Vanguard. Her sun-forged armor reflects all malignant sorcery, while her radiant blade channels the raw celestial heat of an awakening star.',
+    aestheticTheme: 'parchment-gold',
+    artUrl: '/src/assets/images/solar_dawn_paladin_1793833161549.jpg',
+    attributes: { damage: 8.5, durability: 9.5, mobility: 7.0, utility: 8.0, control: 9.0 },
+    powerAttributes: {
+      strength: 8.5,
+      durability: 9.5,
+      speed: 7.0,
+      energyOutput: 9.0,
+      fightingSkill: 9.0,
+      intelligence: 8.0,
+      control: 9.0
+    },
+    powerGlyphs: [
+      UNIVERSAL_POWER_GLYPHS[3], // Magma Armor / Radiant Shield
+      UNIVERSAL_POWER_GLYPHS[14], // Phase Shift / Divine Ward
+      UNIVERSAL_POWER_GLYPHS[19], // Truesight
+    ],
+    abilities: [
+      {
+        id: 'val-1',
+        name: 'Sunburst Execution',
+        type: 'Action',
+        iconType: 'sword',
+        description: 'Slash downward with the blazing solar greatsword, dealing 5d8 radiant fire damage.',
+        damageDice: '5d8 Radiant Fire'
+      },
+      {
+        id: 'val-2',
+        name: 'Aegis of the Dawn',
+        type: 'Passive',
+        iconType: 'shield',
+        description: 'All friendly units in adjacent lanes gain +3 Armor and immunity to Burn and Poison.',
+        charges: 'Passive Aura'
+      },
+      {
+        id: 'val-3',
+        name: 'Daybreak Reckoning',
+        type: 'Ultimate',
+        iconType: 'sun',
+        description: 'Summon the full brilliance of the celestial sun, blinding the enemy line and cleansing all friendly debuffs.',
+        damageDice: '8d10 Solar Flare'
+      }
+    ],
+    breakdownItems: [
+      { label: 'Sunforged Plate', title: 'Solar Armor', description: 'Imbued with dawn fire.' },
+      { label: 'Blazing Greatsword', title: 'Blade of Dawn', description: 'Channels celestial plasma.' }
+    ],
+    artVisualTheme: {
+      primaryColor: '#f59e0b',
+      glowColor: '#fbbf24',
+      bgGradient: 'from-amber-950 via-yellow-950 to-neutral-950',
+      iconSymbol: '⚔️',
+      badgeText: 'ELITE HERO',
+      visualMotif: 'warpick'
     }
   },
   {
@@ -151,6 +230,7 @@ export const CARDS_DATABASE: Card[] = [
       { label: 'Willow Leaf Blade', title: 'Dark Fey Steel', description: 'Veined with glowing green bio-luminescent runes.' },
       { label: 'Crossguard Gems', title: 'Sunstone & Moonstone', description: 'Harnesses cyclical dawn and twilight magic.' }
     ],
+    artUrl: '/src/assets/images/bog_warden_spear_1793833159377.jpg',
     artVisualTheme: {
       primaryColor: '#10b981',
       glowColor: '#059669',
@@ -163,6 +243,7 @@ export const CARDS_DATABASE: Card[] = [
   {
     id: 'RAD-WEP-001-WARPICK',
     name: 'Warpick of the Fire Mountain',
+    artUrl: '/src/assets/images/radiance_fire_mountain_warpick_1793838068137.jpg',
     subtitle: 'WEAPON (WAR PICK), RARE (ATTUNEMENT REQUIRED)',
     domain: 'Radiance',
     cardType: 'Weapon',
@@ -375,6 +456,7 @@ export const CARDS_DATABASE: Card[] = [
       { label: 'Demonic Maw', title: 'Living Iron Jaws', description: 'Snaps shut on weapons to disarm opponents.' },
       { label: 'Cursed Spikes', title: 'Abyssal Steel', description: 'Drips corrosive acid that melts metal.' }
     ],
+    artUrl: '/src/assets/images/abyssal_cursed_flail_1793833160567.jpg',
     artVisualTheme: {
       primaryColor: '#a855f7',
       glowColor: '#9333ea',
@@ -758,6 +840,7 @@ export const CARDS_DATABASE: Card[] = [
   {
     id: 'ARC-CHP-001-TARANIS',
     name: 'Taranis',
+    artUrl: '/src/assets/images/arcane_thunder_god_taranis_1793838062583.jpg',
     subtitle: 'CELTIC GOD OF THUNDER • HIT POINTS: 345',
     domain: 'Arcane',
     secondaryDomain: 'Radiance',
@@ -867,6 +950,7 @@ export const CARDS_DATABASE: Card[] = [
   {
     id: 'VER-CHP-002-BRUMHORN',
     name: 'Brumhorn',
+    artUrl: '/src/assets/images/verdance_elderwood_treant_1793838063812.jpg',
     subtitle: 'THE TIMBER GUARDIAN • ROLE: TANK / ROAM',
     domain: 'Verdance',
     cardType: 'Champion',
@@ -1039,6 +1123,7 @@ export const CARDS_DATABASE: Card[] = [
   {
     id: 'ABY-CHP-001-DAMYAN',
     name: 'Damyan',
+    artUrl: '/src/assets/images/abyss_cosmic_serpent_damyan_1793838064865.jpg',
     subtitle: 'SUPREME DEMON SNAKE • POWER LEVEL: ∞ BOUNDLESS',
     domain: 'Abyss',
     cardType: 'Champion',
@@ -1298,6 +1383,7 @@ export const CARDS_DATABASE: Card[] = [
       { label: 'Three Ring Wheels', title: 'Ophanim Form', description: 'Gears covered in celestial eyes.' },
       { label: 'Alabaster Haft', title: 'Pure White Marble', description: 'Feathered gold pommel with holy balance.' }
     ],
+    artUrl: '/src/assets/images/ophanim_celestial_angel_1793833161130.jpg',
     artVisualTheme: {
       primaryColor: '#facc15',
       glowColor: '#eab308',
@@ -1309,6 +1395,7 @@ export const CARDS_DATABASE: Card[] = [
   {
     id: 'ARC-CHP-002-MIMIR',
     name: 'Mímir',
+    artUrl: '/src/assets/images/arcane_astral_oracle_mimir_1793838068055.jpg',
     subtitle: 'GUARDIAN OF THE WELL • THE ALL-KNOWING HEAD',
     domain: 'Arcane',
     cardType: 'Champion',
@@ -1986,8 +2073,9 @@ export const PRESET_DECKS: DeckPreset[] = [
     title: 'Sanctuary / Holy Light Defense Deck',
     domain: 'Sanctuary',
     description: 'Defensive powerhouse centered on holy shields, radiant banishments, celestial regeneration, and adaptive weaponry.',
-    championCardId: 'SAN-BST-001-LUMINARIS',
+    championCardId: 'SAN-CHP-001-VALERIA-SOLARIS',
     cardIds: [
+      'SAN-CHP-001-VALERIA-SOLARIS',
       'SAN-BST-001-LUMINARIS',
       'SAN-WEP-004-OPHANIM',
       'SAN-WEP-003-AURIC-BIND',

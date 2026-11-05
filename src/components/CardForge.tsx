@@ -46,8 +46,11 @@ import {
   Heart,
   ChevronDown,
   ChevronUp,
-  Play
+  Play,
+  Upload,
+  Link
 } from 'lucide-react';
+import { CURATED_CARD_ARTWORKS, generateRecommendedArtPrompt } from '../data/cardArtPresets';
 
 interface CardForgeProps {
   onCardCreated: (newCard: Card) => void;
@@ -142,6 +145,32 @@ export const CardForge: React.FC<CardForgeProps> = ({
   const [canSaveValidated, setCanSaveValidated] = useState(true);
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
 
+  // Artwork & Real Image Studio State
+  const [artUrl, setArtUrl] = useState<string>('');
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setArtUrl(dataUrl);
+        soundEngine.playMicroSound('select');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCopyPrompt = () => {
+    const prompt = generateRecommendedArtPrompt({ name, subtitle, domain, cardType, subtype });
+    navigator.clipboard.writeText(prompt);
+    setPromptCopied(true);
+    soundEngine.playMicroSound('click');
+    setTimeout(() => setPromptCopied(false), 2500);
+  };
+
   // Selected glyph objects
   const cardPowerGlyphs: PowerGlyph[] = UNIVERSAL_POWER_GLYPHS.filter(g => selectedGlyphIds.includes(g.id));
 
@@ -161,6 +190,7 @@ export const CardForge: React.FC<CardForgeProps> = ({
     attunementRequired: true,
     quote,
     lore,
+    artUrl: artUrl.trim() || undefined,
     aestheticTheme: domain === 'Radiance' ? 'volcanic-dark' : domain === 'Verdance' ? 'verdant-emerald' : domain === 'Arcane' ? 'astral-sapphire' : domain === 'Abyss' ? 'abyss-crimson' : 'parchment-gold',
     attributes,
     abilities,
@@ -778,6 +808,110 @@ export const CardForge: React.FC<CardForgeProps> = ({
                       onChange={(e) => setIconSymbol(e.target.value)}
                       className="w-full px-2 py-1.5 rounded-xl bg-stone-900 border border-stone-700 text-center text-sm font-bold"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Real Card Artwork & Image Studio */}
+              <div className="space-y-4 p-4 rounded-2xl bg-stone-900/90 border border-amber-500/40 shadow-inner">
+                <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                  <h3 className="font-cinzel font-bold text-sm text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                    <ImageIcon size={16} />
+                    <span>Card Artwork & Real Image Studio</span>
+                  </h3>
+                  {artUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setArtUrl('')}
+                      className="px-2.5 py-1 rounded-lg bg-stone-950 hover:bg-red-950/80 text-stone-400 hover:text-red-300 border border-stone-800 text-[11px] font-mono transition"
+                    >
+                      Clear Art
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-stone-300 text-xs">
+                  Attach real high-definition artwork to your forged card. Upload any image from your computer, paste an online link, or pick from our curated fantasy gallery.
+                </p>
+
+                {/* Upload & URL Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* File Upload */}
+                  <label className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-dashed border-stone-700 hover:border-amber-500/60 bg-stone-950 cursor-pointer transition group">
+                    <Upload size={18} className="text-stone-400 group-hover:text-amber-400 group-hover:scale-110 transition" />
+                    <span className="text-[11px] font-cinzel font-bold text-stone-200 group-hover:text-amber-200 mt-1">
+                      Upload File From PC
+                    </span>
+                    <span className="text-[9px] font-mono text-stone-400">JPG, PNG, WEBP</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Web URL Input */}
+                  <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-1.5 flex flex-col justify-center">
+                    <span className="text-[10px] font-cinzel font-bold text-stone-300 flex items-center gap-1">
+                      <Link size={12} className="text-amber-400" />
+                      <span>Paste Image URL</span>
+                    </span>
+                    <input
+                      type="url"
+                      value={artUrl}
+                      onChange={(e) => setArtUrl(e.target.value)}
+                      placeholder="https://.../card_art.jpg"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-xs text-stone-100 font-mono placeholder:text-stone-600 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Curated Gallery 1-Click Pick */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-cinzel font-bold text-[11px] text-amber-200 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles size={12} className="text-amber-400" />
+                      <span>1-Click Curated Masterpieces</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyPrompt}
+                      className="px-2.5 py-1 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-800 text-[10px] font-mono flex items-center gap-1 transition"
+                    >
+                      {promptCopied ? <Check size={11} className="text-green-400" /> : <Wand2 size={11} />}
+                      <span>{promptCopied ? 'Copied AI Prompt!' : 'Copy AI Prompt'}</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {CURATED_CARD_ARTWORKS.slice(0, 4).map((art) => (
+                      <button
+                        key={art.id}
+                        type="button"
+                        onClick={() => {
+                          setArtUrl(art.url);
+                          soundEngine.playMicroSound('select');
+                        }}
+                        className={`group rounded-lg overflow-hidden border text-left transition ${
+                          artUrl === art.url
+                            ? 'border-amber-400 ring-2 ring-amber-400 shadow-md'
+                            : 'border-stone-800 hover:border-amber-500/60'
+                        }`}
+                      >
+                        <div className="aspect-[4/3] w-full bg-stone-950 overflow-hidden relative">
+                          <img
+                            src={art.url}
+                            alt={art.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                          />
+                        </div>
+                        <div className="p-1 bg-stone-950 text-[10px] font-cinzel font-bold text-stone-300 group-hover:text-amber-200 truncate">
+                          {art.title}
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

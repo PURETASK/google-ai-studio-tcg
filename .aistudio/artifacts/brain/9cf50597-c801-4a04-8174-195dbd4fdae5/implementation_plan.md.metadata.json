@@ -1,0 +1,6 @@
+{
+  "summary": "Architectural and visual implementation plan for overhauling all cards with domain-specific borders, bespoke typography, color palettes, full-art sculpted HUD anatomy, pre-baked real card illustrations, and an in-app batch & single-card AI artwork generator with persistent IndexedDB storage.",
+  "updatedAt": "2026-11-04T23:16:36.110824968Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

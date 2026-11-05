@@ -59,9 +59,10 @@ interface CardCodexProps {
   cards: Card[];
   onInspectCard: (card: Card) => void;
   onBulkImportCards?: (cards: Card[]) => void;
+  onOpenArtStudio?: () => void;
 }
 
-export const CardCodex: React.FC<CardCodexProps> = ({ cards, onInspectCard, onBulkImportCards }) => {
+export const CardCodex: React.FC<CardCodexProps> = ({ cards, onInspectCard, onBulkImportCards, onOpenArtStudio }) => {
   const [activeTab, setActiveTab] = useState<'compendium' | 'glyphCodex' | 'iconRegistry' | 'interactiveRulebook' | 'combatMeters'>('compendium');
   const [isBulkImportOpen, setIsBulkImportOpen] = useState<boolean>(false);
 
@@ -448,6 +449,23 @@ export const CardCodex: React.FC<CardCodexProps> = ({ cards, onInspectCard, onBu
             )}
           </div>
 
+          {/* Domain Visuals & Batch AI Art Studio Button */}
+          {onOpenArtStudio && (
+            <button
+              type="button"
+              id="btn-codex-art-studio"
+              onClick={() => {
+                soundEngine.playMicroSound('select');
+                onOpenArtStudio();
+              }}
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-black font-black flex items-center gap-1.5 transition shadow-md"
+              title="Open 6-Domain Visual Identities & Batch AI Art Generator"
+            >
+              <Sparkles size={14} />
+              <span>Domain Art & AI Generator</span>
+            </button>
+          )}
+
           {/* Bulk Import JSON Button */}
           <button
             type="button"
@@ -456,7 +474,7 @@ export const CardCodex: React.FC<CardCodexProps> = ({ cards, onInspectCard, onBu
               soundEngine.playMicroSound('select');
               setIsBulkImportOpen(true);
             }}
-            className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 transition shadow-sm ml-auto"
+            className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 transition shadow-sm"
             title="Import JSON array of card definitions into local collection"
           >
             <Upload size={14} className="text-amber-400" />
